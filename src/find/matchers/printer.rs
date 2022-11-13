@@ -5,8 +5,24 @@
 // https://opensource.org/licenses/MIT.
 
 use walkdir::DirEntry;
-
 use super::{Matcher, MatcherIO};
+
+use lscolors::{Indicator, LsColors, Style};
+
+use std::fmt::Write;
+use std::path::Path;
+use std::borrow::Cow;
+// use std::io::{self, Write};
+
+// use lscolors::{Indicator, LsColors, Style};
+
+// use crate::config::Config;
+use crate::find::Config;
+// use crate::dir_entry::DirEntry;
+// use crate::error::print_error;
+// use crate::exit_codes::ExitCode;
+
+
 
 pub enum PrintDelimiter {
     Newline,
@@ -25,27 +41,349 @@ impl std::fmt::Display for PrintDelimiter {
 /// This matcher just prints the name of the file to stdout.
 pub struct Printer {
     delimiter: PrintDelimiter,
+    colors: Option<LsColors>
 }
 
 impl Printer {
     pub fn new(delimiter: PrintDelimiter) -> Self {
-        Self { delimiter }
+        Self { delimiter, colors: None }
+    }
+
+    pub fn new_with_colors(delimiter: PrintDelimiter, colors: Option<LsColors>) -> Self {
+        Self { delimiter, colors }
     }
 }
 
 impl Matcher for Printer {
+
+// TODO: this function is performance critical and can probably be optimized
+// pub fn print_entry<W: Write>(stdout: &mut W, entry: &DirEntry, config: &Config) {
+//     let r = if let Some(ref ls_colors) = config.ls_colors {
+//         print_entry_colorized(stdout, entry, config, ls_colors)
+//     } else {
+//         print_entry_uncolorized(stdout, entry, config)
+//     };
+
+//     if let Err(e) = r {
+//         if e.kind() == ::std::io::ErrorKind::BrokenPipe {
+//             // Exit gracefully in case of a broken pipe (e.g. 'fd ... | head -n 3').
+//             ExitCode::Success.exit();
+//         } else {
+//             print_error(format!("Could not write to output: {}", e));
+//             ExitCode::GeneralError.exit();
+//         }
+//     }
+// }
+
+// Display a trailing slash if the path is a directory and the config option is enabled.
+// If the path_separator option is set, display that instead.
+// The trailing slash will not be colored.
+// #[inline]
+// fn print_trailing_slash<W: Write>(
+//     stdout: &mut W,
+//     entry: &DirEntry,
+//     config: &Config,
+//     style: Option<&Style>,
+// ) -> io::Result<()> {
+//     if entry.file_type().map_or(false, |ft| ft.is_dir()) {
+//         write!(
+//             stdout,
+//             "{}",
+//             style
+//                 .map(Style::to_ansi_term_style)
+//                 .unwrap_or_default()
+//                 .paint(&config.actual_path_separator)
+//         )?;
+//     }
+//     Ok(())
+// }
+
+// TODO: this function is performance critical and can probably be optimized
+// fn print_entry_colorized<W: Write>(
+// fn matches(
+//     &self,
+//     file_info: &DirEntry,
+//     matcher_io: &mut MatcherIO,
+    
+//     // stdout: &mut W,
+//     // entry: &DirEntry,
+//     // config: &Config,
+//     // ls_colors: &LsColors,
+// ) -> bool {
+//     let ls_colors = LsColors::from_env().unwrap_or_default();
+//     let mut stdout = matcher_io.deps.get_output().borrow_mut();
+//     // Split the path between the parent and the last component
+//     let mut offset = 0;
+//     // let path = file_info.stripped_path(config);
+//     let path = file_info.path();
+//     let path_str = path.to_string_lossy();
+
+//     if let Some(parent) = path.parent() {
+//         offset = parent.to_string_lossy().len();
+//         for c in path_str[offset..].chars() {
+//             if std::path::is_separator(c) {
+//                 offset += c.len_utf8();
+//             } else {
+//                 break;
+//             }
+//         }
+//     }
+
+//     if offset > 0 {
+//         let mut parent_str = Cow::from(&path_str[..offset]);
+//         // if let Some(ref separator) =  {
+//         //     *parent_str.to_mut() = replace_path_separator(&parent_str, separator);
+//         // }
+
+//         let style = ls_colors
+//             .style_for_indicator(Indicator::Directory)
+//             .map(Style::to_ansi_term_style)
+//             .unwrap_or_default();
+//         write!(stdout, "{}", style.paint(parent_str))?;
+//     }
+
+//     let style = file_info
+//         .style(ls_colors)
+//         .map(Style::to_ansi_term_style)
+//         .unwrap_or_default();
+//     write!(stdout, "{}", style.paint(&path_str[offset..]))?;
+
+//     print_trailing_slash(
+//         stdout,
+//         file_info,
+//         config,
+//         ls_colors.style_for_indicator(Indicator::Directory),
+//     )?;
+
+//     if config.null_separator {
+//         write!(stdout, "\0")?;
+//     } else {
+//         writeln!(stdout)?;
+//     }
+
+//     Ok(())
+// }
+
+// TODO: this function is performance critical and can probably be optimized
+// fn print_entry_uncolorized_base<W: Write>(
+//     stdout: &mut W,
+//     entry: &DirEntry,
+//     config: &Config,
+// ) -> io::Result<()> {
+//     let separator = if config.null_separator { "\0" } else { "\n" };
+//     let path = entry.stripped_path(config);
+
+//     let mut path_string = path.to_string_lossy();
+//     if let Some(ref separator) = config.path_separator {
+//         *path_string.to_mut() = replace_path_separator(&path_string, separator);
+//     }
+//     write!(stdout, "{}", path_string)?;
+//     print_trailing_slash(stdout, entry, config, None)?;
+//     write!(stdout, "{}", separator)
+// }
+
+// #[cfg(not(unix))]
+// fn print_entry_uncolorized<W: Write>(
+//     stdout: &mut W,
+//     entry: &DirEntry,
+//     config: &Config,
+// ) -> io::Result<()> {
+//     print_entry_uncolorized_base(stdout, entry, config)
+// }
+
+// #[cfg(unix)]
+// fn print_entry_uncolorized<W: Write>(
+//     stdout: &mut W,
+//     entry: &DirEntry,
+//     config: &Config,
+// ) -> io::Result<()> {
+//     use std::os::unix::ffi::OsStrExt;
+
+//     if config.interactive_terminal || config.path_separator.is_some() {
+//         // Fall back to the base implementation
+//         print_entry_uncolorized_base(stdout, entry, config)
+//     } else {
+//         // Print path as raw bytes, allowing invalid UTF-8 filenames to be passed to other processes
+//         let separator = if config.null_separator { b"\0" } else { b"\n" };
+//         stdout.write_all(entry.stripped_path(config).as_os_str().as_bytes())?;
+//         print_trailing_slash(stdout, entry, config, None)?;
+//         stdout.write_all(separator)
+//     }
+// }
+    // fn matches(&self, file_info: &DirEntry, matcher_io: &mut MatcherIO) -> bool {
+    //     let mut out = matcher_io.deps.get_output().borrow_mut();
+    //     let path = file_info.path();
+
+    //     let lscolors = LsColors::from_env().unwrap_or_default();
+
+    //     for (component, style) in lscolors.style_for_path_components(path) {
+    //         let ansi_style = style.map(Style::to_ansi_term_style).unwrap_or_default();
+    //         write!(out, "{}", ansi_style.paint(component.to_string_lossy())).unwrap();
+    //     }
+
+    //     write!(
+    //         out,
+    //         "{}",
+    //         self.delimiter
+    //     )
+    //     .unwrap();
+    //     out.flush().unwrap();
+    //     true
+    // }
+    
+    // IMPORTANT
+    // this code works the best right now
+    // fn matches(&self, file_info: &DirEntry, matcher_io: &mut MatcherIO) -> bool {
+    //     let mut out = matcher_io.deps.get_output().borrow_mut();
+    //     let path = file_info.path();
+
+    //     let lscolors = LsColors::from_env().unwrap_or_default();
+    //     let mut colored_path = String::new();
+
+    //     for (component, style) in lscolors.style_for_path_components(path) {
+    //         let ansi_style = style.map(Style::to_ansi_term_style).unwrap_or_default();
+    //         write!(&mut colored_path, "{}", ansi_style.paint(component.to_string_lossy())).unwrap();
+    //     }
+
+    //     write!(
+    //         out,
+    //         "{}{}",
+    //         colored_path,
+    //         self.delimiter
+    //     )
+    //     .unwrap();
+    //     out.flush().unwrap();
+    //     true
+    // }
+
+
+
+
+
     fn matches(&self, file_info: &DirEntry, matcher_io: &mut MatcherIO) -> bool {
         let mut out = matcher_io.deps.get_output().borrow_mut();
+        let path = file_info.path();
+
+        // let lscolors = LsColors::from_env().unwrap_or_default();
+        let parent = path.parent();
+        let parent_str_orig = parent.unwrap().to_string_lossy();
+
+        let (parent_str, sep) = if parent_str_orig == "" {
+            (path.to_string_lossy(), "".to_string())
+        } else {
+            (parent_str_orig, std::path::MAIN_SEPARATOR.to_string())
+        };
+        
+        // let style = lscolors.style_for_path();
+        // let ansi_style = style.map(Style::to_ansi_term_style).unwrap_or_default();
+        // let parent_color = parent;
+
+        let fname = path.file_name().unwrap_or_default().to_string_lossy();
+        
+        // dbg!(&path, &parent, &fname, &sep);
+
+        // for (component, style) in lscolors.style_for_path_components(path) {
+        //     let ansi_style = style.map(Style::to_ansi_term_style).unwrap_or_default();
+        //     write!(colored_path, "{}", ansi_style.paint(component.to_string_lossy())).unwrap();
+        // }
+
         write!(
             out,
-            "{}{}",
-            file_info.path().to_string_lossy(),
+            // "\x1b[93m{}{}\x1b[0m{}{}",
+            "{}{}{}{}",
+            parent_str,
+            sep,
+            fname,
             self.delimiter
         )
         .unwrap();
         out.flush().unwrap();
         true
     }
+
+/*
+    fn matches(&self, file_info: &DirEntry, matcher_io: &mut MatcherIO) -> bool {
+        let mut out = matcher_io.deps.get_output().borrow_mut();
+        let path = file_info.path();
+
+        let lscolors = LsColors::from_env().unwrap_or_default();
+        let mut colored_path = String::new();
+
+        for (component, style) in lscolors.style_for_path_components(path) {
+            let ansi_style = style.map(Style::to_ansi_term_style).unwrap_or_default();
+            write!(colored_path, "{}", ansi_style.paint(component.to_string_lossy())).unwrap();
+        }
+
+        write!(
+            out,
+            "{}{}",
+            colored_path,
+            self.delimiter
+        )
+        .unwrap();
+        out.flush().unwrap();
+        true
+    }
+*/
+
+
+
+
+
+
+//     fn matches(&self, file_info: &DirEntry, matcher_io: &mut MatcherIO) -> bool {
+//         let mut out = matcher_io.deps.get_output().borrow_mut();
+//         // let file_path = file_info.path().to_string_lossy();
+
+//         // writeln!(out, "\x1b[93mError\x1b[0m").unwrap();
+//         let lscolors = LsColors::from_env().unwrap_or_default();
+
+//         // let style = lscolors.style_for_path(file_path);
+
+//         // If you want to use `ansi_term`:
+//         // let ansi_style = style.map(Style::to_ansi_term_style)
+//         //               .unwrap_or_default();
+//         // let colored_path = ansi_style.paint(file_path);
+//         // let colored_path = style.paint(file_path);
+//         // let style = Style::new().bold().on(Colour::Black);
+        
+//         // let meta = &file_info.metadata();
+//         // let s = lscolors.style_for_path_with_metadata(file_info.path(), meta.ok());
+//         // let s = lscolors.style_for_path_with_metadata(file_info.path(), meta.ok());
+//         // let s = lscolors.style_for_path(file_info.path()).unwrap();
+//         // let s = lscolors.style_for_path(file_info.path());
+//         // let colored_path = (*s).paint(file_info.path().to_string_lossy());
+//         // let colored_path = format!("{s:?}");
+
+//         let s = lscolors.style_for_path(file_info.path());
+//         let ansi_style = s.map(Style::to_ansi_term_style)
+//                       .unwrap_or_default();
+// // println!("{}", ansi_style.paint(path));
+//         write!(
+//             out,
+//             "{}{}",
+//             // "\x1b[93m{}{}\x1b[0m",
+//             // file_path,
+//             // colored_path,
+//             ansi_style.paint(file_info.path().to_string_lossy()),
+//             self.delimiter
+//         )
+//         .unwrap();
+//         out.flush().unwrap();
+//         true
+//     }
+    // fn matches(&self, file_info: &DirEntry, matcher_io: &mut MatcherIO) -> bool {
+    //     let mut out = matcher_io.deps.get_output().borrow_mut();
+    //     write!(
+    //         out,
+    //         "{}{}",
+    //         file_info.path().to_string_lossy(),
+    //         self.delimiter
+    //     )
+    //     .unwrap();
+    //     out.flush().unwrap();
+    //     true
+    // }
 
     fn has_side_effects(&self) -> bool {
         true

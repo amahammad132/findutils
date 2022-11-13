@@ -53,6 +53,8 @@ use self::type_matcher::TypeMatcher;
 
 use super::{Config, Dependencies};
 
+use lscolors::{Indicator, LsColors, Style};
+
 /// Struct holding references to outputs and any inputs that can't be derived
 /// from the file/directory info.
 pub struct MatcherIO<'a> {
@@ -277,7 +279,10 @@ fn build_matcher_tree(
     let mut invert_next_matcher = false;
     while i < args.len() {
         let possible_submatcher = match args[i] {
-            "-print" => Some(Printer::new(PrintDelimiter::Newline).into_box()),
+            "-print" => {
+                let lscolors = LsColors::from_env();
+                Some(Printer::new_with_colors(PrintDelimiter::Newline, lscolors).into_box())
+            },
             "-print0" => Some(Printer::new(PrintDelimiter::Null).into_box()),
             "-printf" => {
                 if i >= args.len() - 1 {

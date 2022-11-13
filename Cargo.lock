@@ -271,6 +271,7 @@ dependencies = [
  "clap",
  "faccess",
  "filetime",
+ "lscolors",
  "nix 0.25.0",
  "once_cell",
  "onig",
@@ -481,6 +482,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51b9bbe6c47d51fc3e1a9b945965946b4c44142ab8792c50835a980d362c2710"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "lscolors"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "074bff749d092e2e818fe954952102f88e21f67fc69f4d350621aab15a1810f1"
+dependencies = [
+ "ansi_term",
 ]
 
 [[package]]

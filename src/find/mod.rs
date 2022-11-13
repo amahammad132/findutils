@@ -151,6 +151,9 @@ fn process_dir<'a>(
         match result {
             Err(err) => writeln!(&mut stderr(), "Error: {}: {}", dir, err).unwrap(),
             Ok(entry) => {
+                // dbg!(&entry);
+                // dbg!(&deps);
+                // dbg!(&deps.get_output_as_string());
                 let mut matcher_io = matchers::MatcherIO::new(deps);
                 if matcher.matches(&entry, &mut matcher_io) {
                     found_count += 1;
