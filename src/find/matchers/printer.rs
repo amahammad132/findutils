@@ -274,9 +274,17 @@ impl Matcher for Printer {
             (parent_str_orig, std::path::MAIN_SEPARATOR.to_string())
         };
         
-        // let style = lscolors.style_for_path();
-        // let ansi_style = style.map(Style::to_ansi_term_style).unwrap_or_default();
-        // let parent_color = parent;
+        let lscolors = self.colors.as_ref();
+
+        let final_str = if let Some(c) = lscolors {
+            let style = c.style_for_indicator(Indicator::Directory);
+            let ansi_style = style.map(Style::to_ansi_term_style).unwrap_or_default();
+            let parent_colored = ansi_style.paint(parent_str.to_owned());
+
+            parent_colored.to_string()
+        } else {
+            parent_str.to_string()
+        };
 
         let fname = path.file_name().unwrap_or_default().to_string_lossy();
         
@@ -291,7 +299,8 @@ impl Matcher for Printer {
             out,
             // "\x1b[93m{}{}\x1b[0m{}{}",
             "{}{}{}{}",
-            parent_str,
+            // parent_str,
+            final_str,
             sep,
             fname,
             self.delimiter

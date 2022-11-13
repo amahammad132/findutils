@@ -187,7 +187,10 @@ pub fn build_top_level_matcher(
     if !top_level_matcher.has_side_effects() {
         let mut new_and_matcher = AndMatcherBuilder::new();
         new_and_matcher.new_and_condition(top_level_matcher);
-        new_and_matcher.new_and_condition(Printer::new(PrintDelimiter::Newline));
+        
+        let lscolors = LsColors::from_env();
+        // Some(Printer::new_with_colors(PrintDelimiter::Newline, lscolors).into_box())
+        new_and_matcher.new_and_condition(Printer::new_with_colors(PrintDelimiter::Newline, lscolors));
         return Ok(new_and_matcher.build());
     }
     Ok(top_level_matcher)
