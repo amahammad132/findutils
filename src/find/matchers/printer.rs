@@ -43,24 +43,26 @@ impl Matcher for Printer {
     fn matches(&self, file_info: &DirEntry, matcher_io: &mut MatcherIO) -> bool {
         const END_ANSI: &str = "\u{1b}[0m";
 
-        let mut out = matcher_io.deps.get_output().borrow_mut();
+        let mut stdout = matcher_io.deps.get_output().borrow_mut();
         let path = file_info.path();
 
         let parent = path.parent();
         let parent_str_orig = parent.unwrap().to_string_lossy();
 
         let fname = path.file_name().unwrap_or_default().to_string_lossy();
-        let lscolors = self.colors.as_ref();
-
+        let ls_colors = self.colors.as_ref();
+        
+        let mut loc = [0; 1];
+        let path_sep: &str = std::path::MAIN_SEPARATOR.encode_utf8(&mut loc);
 
         let (parent_str, sep) = match (parent_str_orig.is_empty(), fname.is_empty()) {
-            (true , true )  => (path.to_string_lossy(),                 "".to_string()),
-            (false, false)  => (parent_str_orig, std::path::MAIN_SEPARATOR.to_string()),
-            (_    , _    )  => (parent_str_orig,                        "".to_string())
+            (true , true )  => (path.to_string_lossy(),       ""),
+            (false, false)  => (parent_str_orig,        path_sep),
+            (_    , _    )  => (parent_str_orig,              "")
         };
 
 
-        let (color_code_parent, color_code_path) = if let Some(ref c) = lscolors {
+        let (color_code_parent, color_code_path) = if let Some(ref c) = ls_colors {
             let style_d = c.style_for_indicator(Indicator::Directory);
             let ansi_style1 = style_d.unwrap().to_ansi_term_style();
 
@@ -77,15 +79,14 @@ impl Matcher for Printer {
         };
         
         write!(
-            &mut out,
+            &mut stdout,
             "{}{}{}{}{}{}{}",
             color_code_parent,
             parent_str,
             sep,
             color_code_path,
             fname,
-            if color_code_path == END_ANSI { "" } else { END_ANSI },
-            // END_ANSI,
+            if color_code_path != END_ANSI { END_ANSI } else { "" },
             self.delimiter
         )
         .unwrap();

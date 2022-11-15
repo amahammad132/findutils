@@ -168,8 +168,8 @@ fn process_dir<'a>(
             }
         }
     }
-    let mut n = deps.get_output().borrow_mut();
-    n.flush().unwrap();
+    let stdout = deps.get_output();
+    stdout.borrow_mut().flush().unwrap();
     found_count
 }
 
