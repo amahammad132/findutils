@@ -49,10 +49,13 @@ pub struct StandardDependencies {
     output: Rc<RefCell<dyn Write>>,
     now: SystemTime,
 }
-
+use std::io::BufWriter;
 impl StandardDependencies {
     pub fn new() -> Self {
         Self {
+            #[cfg(feature = "buffered_write")]
+            output: Rc::new(RefCell::new(BufWriter::new(stdout().lock()))),
+            #[cfg(not(feature = "buffered_write"))]
             output: Rc::new(RefCell::new(stdout())),
             now: SystemTime::now(),
         }
@@ -154,11 +157,15 @@ fn process_dir<'a>(
                 // dbg!(&entry);
                 // dbg!(&deps);
                 // dbg!(&deps.get_output_as_string());
+                // eprintln!("new entry");
+                // dbg!(&deps);
                 let mut matcher_io = matchers::MatcherIO::new(deps);
+                        // let mut out = matcher_io.deps.get_output().borrow_mut();
                 if matcher.matches(&entry, &mut matcher_io) {
                     found_count += 1;
                 }
                 if matcher_io.should_quit() {
+                    // eprintln!("exiting...");
                     *quit = true;
                     break;
                 }
@@ -168,6 +175,8 @@ fn process_dir<'a>(
             }
         }
     }
+    let mut n = deps.get_output().borrow_mut();
+    n.flush().unwrap();
     found_count
 }
 

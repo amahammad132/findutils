@@ -53,7 +53,8 @@ use self::type_matcher::TypeMatcher;
 
 use super::{Config, Dependencies};
 
-use lscolors::{Indicator, LsColors, Style};
+// use lscolors::{Indicator, LsColors, Style};
+use lscolors::LsColors;
 
 /// Struct holding references to outputs and any inputs that can't be derived
 /// from the file/directory info.
@@ -189,7 +190,6 @@ pub fn build_top_level_matcher(
         new_and_matcher.new_and_condition(top_level_matcher);
         
         let lscolors = LsColors::from_env();
-        // Some(Printer::new_with_colors(PrintDelimiter::Newline, lscolors).into_box())
         new_and_matcher.new_and_condition(Printer::new_with_colors(PrintDelimiter::Newline, lscolors));
         return Ok(new_and_matcher.build());
     }

@@ -20,6 +20,9 @@ onig = "6.4"
 uucore = { version = "0.0.12", features = ["entries", "fs", "fsext", "mode"] }
 lscolors = "0.12.0"
 
+[features]
+buffered_write = []
+
 [dev-dependencies]
 assert_cmd = "2"
 filetime = "0.2"

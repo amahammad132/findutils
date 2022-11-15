@@ -7,22 +7,7 @@
 use walkdir::DirEntry;
 use super::{Matcher, MatcherIO};
 
-use lscolors::{Indicator, LsColors, Style};
-
-use std::fmt::Write;
-use std::path::Path;
-use std::borrow::Cow;
-// use std::io::{self, Write};
-
-// use lscolors::{Indicator, LsColors, Style};
-
-// use crate::config::Config;
-use crate::find::Config;
-// use crate::dir_entry::DirEntry;
-// use crate::error::print_error;
-// use crate::exit_codes::ExitCode;
-
-
+use lscolors::{Indicator, LsColors};
 
 pub enum PrintDelimiter {
     Newline,
@@ -38,10 +23,14 @@ impl std::fmt::Display for PrintDelimiter {
     }
 }
 
+use std::io::BufWriter;
+use std::io::Write;
+// use std::rc::Rc;
 /// This matcher just prints the name of the file to stdout.
 pub struct Printer {
     delimiter: PrintDelimiter,
-    colors: Option<LsColors>
+    colors: Option<LsColors>,
+    // buf: BufWriter<Write>
 }
 
 impl Printer {
@@ -259,12 +248,12 @@ impl Matcher for Printer {
 
 
 
-
+    // THIS WORKS
+/*
     fn matches(&self, file_info: &DirEntry, matcher_io: &mut MatcherIO) -> bool {
         let mut out = matcher_io.deps.get_output().borrow_mut();
         let path = file_info.path();
 
-        // let lscolors = LsColors::from_env().unwrap_or_default();
         let parent = path.parent();
         let parent_str_orig = parent.unwrap().to_string_lossy();
 
@@ -288,18 +277,9 @@ impl Matcher for Printer {
 
         let fname = path.file_name().unwrap_or_default().to_string_lossy();
         
-        // dbg!(&path, &parent, &fname, &sep);
-
-        // for (component, style) in lscolors.style_for_path_components(path) {
-        //     let ansi_style = style.map(Style::to_ansi_term_style).unwrap_or_default();
-        //     write!(colored_path, "{}", ansi_style.paint(component.to_string_lossy())).unwrap();
-        // }
-
         write!(
             out,
-            // "\x1b[93m{}{}\x1b[0m{}{}",
             "{}{}{}{}",
-            // parent_str,
             final_str,
             sep,
             fname,
@@ -307,6 +287,71 @@ impl Matcher for Printer {
         )
         .unwrap();
         out.flush().unwrap();
+        true
+    }
+*/
+
+    fn matches(&self, file_info: &DirEntry, matcher_io: &mut MatcherIO) -> bool {
+        const END_ANSI: &str = "\u{1b}[0m";
+
+        let mut out = matcher_io.deps.get_output().borrow_mut();
+        let path = file_info.path();
+
+        let parent = path.parent();
+        let parent_str_orig = parent.unwrap().to_string_lossy();
+
+        let fname = path.file_name().unwrap_or_default().to_string_lossy();
+        let lscolors = self.colors.as_ref();
+
+
+        // let (parent_str, sep) = match (parent_str_orig.is_empty(), fname.is_empty()) {
+        //     (true,   true) => (path.to_string_lossy(), "".to_string()),
+        //     (true,  false) => (parent_str_orig, "".to_string()),
+        //     (false,  true) => (parent_str_orig, "".to_string()),
+        //     (false, false) => (parent_str_orig, std::path::MAIN_SEPARATOR.to_string())
+        // };
+        let (parent_str, sep) = match (parent_str_orig.is_empty(), fname.is_empty()) {
+            (true,  true )  => (path.to_string_lossy(),                 "".to_string()),
+            (false, false)  => (parent_str_orig, std::path::MAIN_SEPARATOR.to_string()),
+            (_,     _    )  => (parent_str_orig,                        "".to_string())
+        };
+        // let (parent_str, sep) = match (parent_str_orig.is_empty(), fname.is_empty()) {
+        //     (true,  true )  => (path.to_string_lossy(),                 "".to_string()),
+        //     (false, false)  => (f, std::path::MAIN_SEPARATOR.to_string()),
+        //     (_,     _    )  => (parent_str_orig,                        "".to_string())
+        // };
+
+
+        let (color_code_parent, color_code_path) = if let Some(ref c) = lscolors {
+            let style_d = c.style_for_indicator(Indicator::Directory);
+            let ansi_style1 = style_d.unwrap().to_ansi_term_style();
+
+            let style_f = c.style_for_path(path);
+            let right = if let Some(ansi_style2) = style_f {
+                ansi_style2.to_ansi_term_style().prefix().to_string()
+            } else {
+                END_ANSI.to_string()
+            };
+
+            (ansi_style1.prefix().to_string(), right)
+        } else {
+            ("".to_string(), "".to_string())
+        };
+        
+        write!(
+            &mut out,
+            "{}{}{}{}{}{}{}",
+            color_code_parent,
+            parent_str,
+            sep,
+            color_code_path,
+            fname,
+            // if color_code_path == END_ANSI { "" } else { END_ANSI },
+            END_ANSI,
+            self.delimiter
+        )
+        .unwrap();
+        // out.flush().unwrap();
         true
     }
 
