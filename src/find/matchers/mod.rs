@@ -53,7 +53,6 @@ use self::type_matcher::TypeMatcher;
 
 use super::{Config, Dependencies};
 
-// use lscolors::{Indicator, LsColors, Style};
 use lscolors::LsColors;
 
 /// Struct holding references to outputs and any inputs that can't be derived

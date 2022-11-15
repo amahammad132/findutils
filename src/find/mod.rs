@@ -154,18 +154,11 @@ fn process_dir<'a>(
         match result {
             Err(err) => writeln!(&mut stderr(), "Error: {}: {}", dir, err).unwrap(),
             Ok(entry) => {
-                // dbg!(&entry);
-                // dbg!(&deps);
-                // dbg!(&deps.get_output_as_string());
-                // eprintln!("new entry");
-                // dbg!(&deps);
                 let mut matcher_io = matchers::MatcherIO::new(deps);
-                        // let mut out = matcher_io.deps.get_output().borrow_mut();
                 if matcher.matches(&entry, &mut matcher_io) {
                     found_count += 1;
                 }
                 if matcher_io.should_quit() {
-                    // eprintln!("exiting...");
                     *quit = true;
                     break;
                 }
